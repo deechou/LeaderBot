@@ -1,10 +1,12 @@
 from typing import Final
 import os
-from xml.dom.expatbuilder import InternalSubsetExtractor
-
 from dotenv import load_dotenv
 from discord import Intents, Client, Message
 from responses import get_response
+from classes import Score, Leaderboard
+
+# Step -1: Connect to some database that keeps track of scores
+leaderboard = Leaderboard("Banana In-houses")
 
 # Step 0: Load our token from somewhere safe
 load_dotenv()
@@ -27,7 +29,25 @@ async def send_message(message: Message, user_message: str) -> None:
 
     try:
         response: str = get_response(user_message)
-        await message.author.send(response) if is_private else await message.channel.send(response)
+        if "command" in response:
+            if "won" in response:
+                username = response.split(' ')[1]
+                leaderboard.add_win(username)
+                response_str = f"{username} won! Updating leaderboard..."
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            elif "lost" in response:
+                username = response.split(' ')[1]
+                leaderboard.add_loss(username)
+                response_str = f"{username} lost! Updating leaderboard..."
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            elif "rankbywins" in response:
+                response_str = leaderboard.print_by_wins()
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            elif "rankbywinrate" in response:
+                response_str = leaderboard.print_by_winrate()
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+        else:
+            await message.author.send(response) if is_private else await message.channel.send(response)
     except Exception as e:
         print(e)
 
@@ -43,7 +63,7 @@ async def on_message(message: Message) -> None:
         return
 
     username: str = str(message.author)
-    user_message: str = str(message.content)
+    user_message: str = message.content
     channel: str = str(message.channel)
 
     print(f'[{channel}] {username}: "{user_message}"')
