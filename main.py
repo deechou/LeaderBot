@@ -29,22 +29,37 @@ async def send_message(message: Message, user_message: str) -> None:
 
     try:
         response: str = get_response(user_message)
-        if "command" in response:
-            if "won" in response:
-                username = response.split(' ')[1]
+        if "!command" in response:
+            cmd = response.split(' ')[1]
+            args = response.split(' ')[2:]
+            if cmd == "addwin":
+                username = args[0]
                 leaderboard.add_win(username)
                 response_str = f"{username} won! Updating leaderboard..."
                 await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif "lost" in response:
-                username = response.split(' ')[1]
+            elif cmd == "addloss":
+                username = args[0]
                 leaderboard.add_loss(username)
                 response_str = f"{username} lost! Updating leaderboard..."
                 await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif "rankbywins" in response:
+            elif cmd == "removewin":
+                username = args[0]
+                leaderboard.remove_win(username)
+                response_str = f"removing win from {username}. Updating leaderboard..."
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            elif cmd == "removeloss":
+                username = args[0]
+                leaderboard.remove_loss(username)
+                response_str = f"removing loss from {username}. Updating leaderboard..."
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            elif cmd == "rankbywins":
                 response_str = leaderboard.print_by_wins()
                 await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif "rankbywinrate" in response:
+            elif cmd == "rankbywinrate":
                 response_str = leaderboard.print_by_winrate()
+                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            else:
+                response_str = "Unknown command"
                 await message.author.send(response_str) if is_private else await message.channel.send(response_str)
         else:
             await message.author.send(response) if is_private else await message.channel.send(response)

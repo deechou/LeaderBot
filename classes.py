@@ -1,3 +1,6 @@
+from random import randint
+
+
 class Score:
     def __init__(self, name, wins, losses):
         self.name: str = name
@@ -41,13 +44,16 @@ class Leaderboard:
         if username not in self.scores.keys():
             return
         else:
-            self.scores[username].wins -= 1
+            if self.scores[username].wins > 0:
+                self.scores[username].wins -= 1
+
 
     def remove_loss(self, username: str):
         if username not in self.scores.keys():
             return
         else:
-            self.scores[username].losses -= 1
+            if self.scores[username].losses > 0:
+                self.scores[username].losses -= 1
 
     def print_scores(self):
         print(f"These are the records for the leaderboard named {self.leaderboard_name}\n")
@@ -73,32 +79,26 @@ class Leaderboard:
         ret_str += "\n"
         return ret_str
 
+def add_fake_data(board: Leaderboard) -> None:
+    players = ["Vinny", "Vex", "Noon", "Dee", "Hangry", "Dr.Headshot"]
+    counter = 0
+    while counter < 50:
+        board.add_win(players[randint(0, len(players) - 1)])
+        counter+= 1
+    counter = 0
+    while counter < 50:
+        board.add_loss(players[randint(0, len(players) - 1)])
+        counter+= 1
+
+
 def main():
     # test stuff here
-    board = Leaderboard("bananas")
-    board.print_scores()
-    board.add_win("dee")
-    board.add_win("dee")
-    board.add_win("dee")
-    board.add_win("dee")
-    board.add_win("dee")
-    board.add_loss("dee")
-    board.add_loss("dee")
-    board.add_loss("dee")
-    board.add_win("noon")
-    board.add_win("vinny")
-    board.add_win("andrew")
-    board.add_win("vex")
-    board.add_loss("vex")
-    board.add_loss("vex")
-    board.add_loss("vex")
-    board.add_loss("vex")
-    board.add_loss("vex")
+    board = Leaderboard("bananas inhouse")
+    add_fake_data(board)
 
     board.print_scores()
     print(board.print_by_wins())
     print(board.print_by_winrate())
-
 
 if __name__ == '__main__':
     main()
