@@ -55,6 +55,12 @@ class Leaderboard:
             if self.scores[username].losses > 0:
                 self.scores[username].losses -= 1
 
+    def remove_player(self, username: str):
+        if username not in self.scores.keys():
+            return
+        else:
+            self.scores.pop(username)
+
     def print_scores(self):
         print(f"These are the records for the leaderboard named {self.leaderboard_name}\n")
         for username in self.scores.keys():

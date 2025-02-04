@@ -30,3 +30,5 @@ def get_response(user_input: str) -> str:
         return f"!command rankbywins"
     if '!printwinrate' in user_input_lowered:
         return f"!command rankbywinrate"
+    if '!removeplayer' in user_input_lowered:
+        return f"!command removeplayer {user_input_lowered.split(' ')[1]}"
