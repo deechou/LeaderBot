@@ -71,27 +71,27 @@ async def send_message(message: Message, user_message: str) -> None:
             #     leaderboard.add_loss(username)
             #     response_str = f"{username} lost! Updating leaderboard..."
             #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            if cmd == "removewin":
-                username = args[0]
-                leaderboard.remove_win(username)
-                response_str = f"removing win from {username}. Updating leaderboard..."
-                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif cmd == "removeloss":
-                username = args[0]
-                leaderboard.remove_loss(username)
-                response_str = f"removing loss from {username}. Updating leaderboard..."
-                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif cmd == "removeplayer":
-                username = args[0]
-                leaderboard.remove_player(username)
-                response_str = f"removing player: {username}. Updating leaderboard..."
-                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif cmd == "rankbywins":
-                response_str = leaderboard.print_by_wins()
-                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            elif cmd == "rankbywinrate":
-                response_str = leaderboard.print_by_winrate()
-                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            # if cmd == "removewin":
+            #     username = args[0]
+            #     leaderboard.remove_win(username)
+            #     response_str = f"removing win from {username}. Updating leaderboard..."
+            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            # elif cmd == "removeloss":
+            #     username = args[0]
+            #     leaderboard.remove_loss(username)
+            #     response_str = f"removing loss from {username}. Updating leaderboard..."
+            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            # elif cmd == "removeplayer":
+            #     username = args[0]
+            #     leaderboard.remove_player(username)
+            #     response_str = f"removing player: {username}. Updating leaderboard..."
+            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            # elif cmd == "rankbywins":
+            #     response_str = leaderboard.print_by_wins()
+            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
+            # elif cmd == "rankbywinrate":
+            #     response_str = leaderboard.print_by_winrate()
+            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
 
 
             else:
