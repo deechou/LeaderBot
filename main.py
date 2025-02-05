@@ -92,11 +92,6 @@ async def send_message(message: Message, user_message: str) -> None:
             # elif cmd == "rankbywinrate":
             #     response_str = leaderboard.print_by_winrate()
             #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-
-
-            else:
-                response_str = "Unknown command"
-                await message.author.send(response_str) if is_private else await message.channel.send(response_str)
         else:
             await message.author.send(response) if is_private else await message.channel.send(response)
     except Exception as e:
