@@ -106,5 +106,8 @@ def main():
     print(board.print_by_wins())
     print(board.print_by_winrate())
 
+    board.remove_player("Dee")
+    print(board.print_by_winrate())
+
 if __name__ == '__main__':
     main()
