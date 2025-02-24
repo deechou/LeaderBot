@@ -1,23 +1,25 @@
-from typing import Final
 import os
-
 import discord
 from dotenv import load_dotenv
-from discord import Intents, Client, Message, app_commands
+from discord import Intents, Message
 from discord.ext import commands
-from responses import get_response
-from classes import Score, Leaderboard
+from classes import Leaderboard
+from responses import *
 
-# Step -1: Connect to some database that keeps track of scores
-leaderboard = Leaderboard("Banana In-houses")
 
 # Step 0: Load our token from somewhere safe
 load_dotenv()
-TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
-SERVER_ID: Final[str] = os.getenv("SERVER_ID")
-GUILD_ID = discord.Object(id=SERVER_ID)
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = os.getenv("SERVER_ID")
+LEADERBOARD_CHANNEL_ID = int(os.getenv("LEADERBOARD_CHANNEL_ID"))  # Channel where leaderboard message is posted
+STATS_MSG_ID = int(os.getenv("MESSAGE_ID", "0"))  # Default to 0 if not set
 
-# Step 1: BOT SETUP
+# Initialize leaderboard
+leaderboard = Leaderboard("Banana In-houses")
+
+# Store leaderboard message object
+leaderboard_message: Message = None
+
 class Client(commands.Bot):
     # HANDLING THE STARTUP FOR BOT
     async def on_ready(self) -> None:
@@ -47,63 +49,61 @@ intents: Intents = Intents.default()
 intents.message_content = True # NOQA
 client: Client = Client(command_prefix="!", intents=intents)
 
-# Step 2: MESSAGE FUNCTIONALITY
-async def send_message(message: Message, user_message: str) -> None:
-    if not user_message:
-        print('(Message was empty because intents were not enabled)')
-        return
+# # Step 2: MESSAGE FUNCTIONALITY
+# async def send_message(message: Message, user_message: str) -> None:
+#     if not user_message:
+#         print('(Message was empty because intents were not enabled)')
+#         return
+#
+#     if is_private := user_message[0] == '?':
+#         user_message = user_message[1:]
+#
+#     try:
+#         response: str = get_response(user_message)
+#         await message.author.send(response) if is_private else await message.channel.send(response)
+#     except Exception as e:
+#         print(e)
 
-    if is_private := user_message[0] == '?':
-        user_message = user_message[1:]
+# Sets up Leaderboard
+@client.tree.command(name="setup_leaderboard", description="Sets up the leaderboard message", guild=GUILD_ID)
+async def setup_leaderboard(interaction: discord.Interaction):
+    global leaderboard_message
+    channel = interaction.channel
 
-    try:
-        response: str = get_response(user_message)
-        if "!command" in response:
-            cmd = response.split(' ')[1]
-            args = response.split(' ')[2:]
-            # if cmd == "addwin":
-            #     username = args[0]
-            #     leaderboard.add_win(username)
-            #     response_str = f"{username} won! Updating leaderboard..."
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            # if cmd == "addloss":
-            #     username = args[0]
-            #     leaderboard.add_loss(username)
-            #     response_str = f"{username} lost! Updating leaderboard..."
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            # if cmd == "removewin":
-            #     username = args[0]
-            #     leaderboard.remove_win(username)
-            #     response_str = f"removing win from {username}. Updating leaderboard..."
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            # elif cmd == "removeloss":
-            #     username = args[0]
-            #     leaderboard.remove_loss(username)
-            #     response_str = f"removing loss from {username}. Updating leaderboard..."
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            # elif cmd == "removeplayer":
-            #     username = args[0]
-            #     leaderboard.remove_player(username)
-            #     response_str = f"removing player: {username}. Updating leaderboard..."
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            # elif cmd == "rankbywins":
-            #     response_str = leaderboard.print_by_wins()
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-            # elif cmd == "rankbywinrate":
-            #     response_str = leaderboard.print_by_winrate()
-            #     await message.author.send(response_str) if is_private else await message.channel.send(response_str)
-        else:
-            await message.author.send(response) if is_private else await message.channel.send(response)
-    except Exception as e:
-        print(e)
+    message = await channel.send("Initializing leaderboard...")
+    leaderboard_message = message
 
-@client.tree.command(name="hello", description="Say hello", guild=GUILD_ID)
-async def sayHello(interaction: discord.Interaction):
-    await interaction.response.send_message("Hi there!")
+    await interaction.response.send_message(f"Leaderboard setup complete! Message ID: {message.id}")
+
+# Fetch stats message
+@client.tree.command(name="fetch_leaderboard", description="Fetches leaderboard data from leaderboard message", guild=GUILD_ID)
+async def fetch_leaderboard(interaction: discord.Interaction):
+    global leaderboard_message
+    channel = client.get_channel(LEADERBOARD_CHANNEL_ID)
+    if channel and STATS_MSG_ID:
+        try:
+            leaderboard_message = await channel.fetch_message(STATS_MSG_ID)
+            print("Leaderboard message fetched successfully.")
+            print(leaderboard_message.content)
+        except discord.NotFound:
+            await interaction.response.send_message("Stats message not found. Run `/setup_leaderboard` to initialize.")
+    else:
+        print("Channel not found or MESSAGE_ID not set.")
+
+# updates the leaderboard message with the leaderboard global
+async def update_leaderboard_message():
+    global leaderboard_message
+    if leaderboard_message:
+        leaderboard_content = leaderboard.print_by_wins()
+
+        await leaderboard_message.edit(content=leaderboard_content)
+    else:
+        print("Leaderboard message not set. Please run '/setup_leaderboard' to initialize.")
 
 @client.tree.command(name="addwin", description="Adds a win to a user", guild=GUILD_ID)
 async def add_win(interaction: discord.Interaction, username: str):
     leaderboard.add_win(username)
+    await update_leaderboard_message()
     await interaction.response.send_message(f'{username} won! Updating leaderboard...')
 
 @client.tree.command(name="addloss", description="Adds a loss to a user", guild=GUILD_ID)
