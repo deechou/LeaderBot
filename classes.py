@@ -23,19 +23,37 @@ class Score:
         return f"{self.name} has {self.wins} wins and {self.losses} losses with a winrate of {self.winrate_string()}"
 
     def leaderboard_score_string(self) -> str:
-        return f"W: {self.wins} L: {self.losses} W/R: {self.winrate_string()}"
+        return f"\t{self.wins} \t{self.losses} \t{self.winrate_string()}"
 
 
 class Leaderboard:
-    def __init__(self, leaderboard_name: str):
+    def __init__(self, leaderboard_name: str, leaderboard_message: str = None):
         self.leaderboard_name = leaderboard_name
         self.scores: dict[str, Score] = {}  # FIX: Move dictionary inside __init__
+        self.message: str = leaderboard_message
+
+        if leaderboard_message is not None:
+            if 'Leaderboard:' in leaderboard_message:
+                for line in leaderboard_message.splitlines():
+                    if len(line) > 0 and '**' not in line:
+                        split_line = line.split('\t')
+                        self.scores[split_line[0]] = Score(split_line[0], int(split_line[1]), int(split_line[2]))
+            else:
+                print('Leaderboard message malformed')
 
     def add_win(self, username: str):
         self.scores.setdefault(username, Score(username)).won()  # Simplified
 
     def add_loss(self, username: str):
         self.scores.setdefault(username, Score(username)).lost()  # Simplified
+
+    def change_wins(self, username: str, wins: int):
+        self.add_win(username)
+        self.scores[username].wins = wins
+
+    def change_losses(self, username: str, losses: int):
+        self.add_loss(username)
+        self.scores[username].losses = losses
 
     def remove_win(self, username: str):
         if self.scores.get(username) and self.scores[username].wins > 0:
@@ -48,17 +66,20 @@ class Leaderboard:
     def remove_player(self, username: str):
         self.scores.pop(username, None)  # `.pop()` with `None` avoids KeyError
 
-    def print_scores(self):
-        print(f"\nLeaderboard: {self.leaderboard_name}")
+    def print_scores(self) -> str:
+        if not self.scores:
+            return f"No players found in {self.leaderboard_name}."
+
+        ret_str = f"**Leaderboard: {self.leaderboard_name}**\n\n"
         for username, score in self.scores.items():
-            print(f"{username}: {score.leaderboard_score_string()}")
-        print()
+            ret_str += f"{username}: {score.leaderboard_score_string()}"
+        return ret_str
 
     def print_by_wins(self) -> str:
         if not self.scores:
             return f"No players found in {self.leaderboard_name}."
 
-        ret_str = f"**{self.leaderboard_name} - Ranked by Wins**\n\n"
+        ret_str = f"**Leaderboard: {self.leaderboard_name} - Ranked by Wins**\n\n"
         sorted_scores = sorted(self.scores.values(), key=lambda x: x.wins, reverse=True)
 
         for score in sorted_scores:
@@ -69,29 +90,38 @@ class Leaderboard:
         if not self.scores:
             return f"No players found in {self.leaderboard_name}."
 
-        ret_str = f"**{self.leaderboard_name} - Ranked by Win Rate**\n\n"
+        ret_str = f"**Leaderboard: {self.leaderboard_name} - Ranked by Win Rate**\n\n"
         sorted_scores = sorted(self.scores.values(), key=lambda x: x.winrate(), reverse=True)
 
         for score in sorted_scores:
             ret_str += f"{score.name}: {score.leaderboard_score_string()}\n"
         return ret_str
 
+    def add_fake_data(self) -> None:
+        players = ["Vinny", "Vex", "Noon", "Dee", "Hangry", "Dr.Headshot"]
 
-def add_fake_data(board: Leaderboard) -> None:
-    players = ["Vinny", "Vex", "Noon", "Dee", "Hangry", "Dr.Headshot"]
+        for player in players:
+            if player not in self.scores:
+                self.scores.update({player: Score(player)})
 
-    for _ in range(50):
-        board.add_win(randint(0, len(players) - 1))
+            self.change_wins(player, randint(0, 100))
+            self.change_losses(player, randint(0, 100))
 
-    for _ in range(50):
-        board.add_loss(randint(0, len(players) - 1))
 
 
 def main():
-    board = Leaderboard("Bananas In-House")
-    add_fake_data(board)
+    leaderboard_message = """**Leaderboard: Bananas In-House - Ranked by Win Rate**
 
-    board.print_scores()
+Hangry: 	66 	4 	94.29%
+Vex: 	51 	42 	54.84%
+Dr.Headshot: 	49 	46 	51.58%
+Vinny: 	10 	32 	23.81%
+Noon: 	4 	50 	7.41%
+Dee: 	12 	55 	7.41%"""
+    board = Leaderboard("Bananas In-House", leaderboard_message)
+
+
+    print(board.print_scores())
     print(board.print_by_wins())
     print(board.print_by_winrate())
 
