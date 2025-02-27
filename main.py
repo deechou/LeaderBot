@@ -20,6 +20,9 @@ leaderboard = Leaderboard("Banana In-houses")
 # Store leaderboard message object
 leaderboard_message: Message = None
 
+# 0 = Wins, 1 = Winrate
+sort_type: int = 0
+
 class Client(commands.Bot):
     # HANDLING THE STARTUP FOR BOT
     async def on_ready(self) -> None:
@@ -67,9 +70,12 @@ async def fetch_leaderboard(interaction: discord.Interaction):
 # updates the leaderboard message with the leaderboard global
 async def update_leaderboard_message():
     global leaderboard_message
-    if leaderboard_message:
+    global sort_type
+    if leaderboard_message and sort_type == 0:
         leaderboard_content = leaderboard.print_by_wins()
-
+        await leaderboard_message.edit(content=leaderboard_content)
+    elif leaderboard_message and sort_type == 1:
+        leaderboard_content = leaderboard.print_by_winrate()
         await leaderboard_message.edit(content=leaderboard_content)
     else:
         print("Leaderboard message not set. Please run '/setup_leaderboard' to initialize.")
@@ -118,11 +124,15 @@ async def remove_player(interaction: discord.Interaction, username: str):
 
 @client.tree.command(name="rankbywins", description="Sorts Leaderboard by Number of Wins", guild=discord.Object(id=GUILD_ID))
 async def rank_by_wins(interaction: discord.Interaction):
+    global sort_type
+    sort_type = 0
     await update_leaderboard_message()
     await interaction.response.send_message('Sorting leaderboard by amount of Wins...')
 
 @client.tree.command(name="rankbywinrate", description="Sorts Leaderboard by Win percentage", guild=discord.Object(id=GUILD_ID))
 async def rank_by_winrate(interaction: discord.Interaction):
+    global sort_type
+    sort_type = 1
     await update_leaderboard_message()
     await interaction.response.send_message('Sorting leaderboard by Win percentage...')
 
