@@ -35,6 +35,20 @@ class Client(commands.Bot):
         except Exception as e:
             print(f'Failed to sync with guild {GUILD_ID}: {e}')
 
+        # Fetch the leaderboard messaqe
+        global leaderboard_message
+        global leaderboard
+        channel = client.get_channel(LEADERBOARD_CHANNEL_ID)
+        if channel and STATS_MSG_ID:
+            try:
+                leaderboard_message = await channel.fetch_message(STATS_MSG_ID)
+                leaderboard = Leaderboard("Banana In-houses", leaderboard_message.content)
+                print("Leaderboard message fetched successfully.")
+            except discord.NotFound:
+                print(f'Failed to fetch leaderboard from guild {GUILD_ID}!')
+        else:
+            print("Leaderboard message not set. Try running /setup_leaderboard.")
+
 intents: Intents = Intents.default()
 intents.message_content = True # NOQA
 
@@ -62,6 +76,7 @@ async def fetch_leaderboard(interaction: discord.Interaction):
             leaderboard_message = await channel.fetch_message(STATS_MSG_ID)
             leaderboard = Leaderboard("Banana In-houses", leaderboard_message.content)
             print("Leaderboard message fetched successfully.")
+            await interaction.response.send_message("Leaderboard fetched successfully!")
         except discord.NotFound:
             await interaction.response.send_message("Stats message not found. Run `/setup_leaderboard` to initialize.")
     else:
@@ -116,6 +131,13 @@ async def remove_loss(interaction: discord.Interaction, username: str):
     await update_leaderboard_message()
     await interaction.response.send_message(f'removing loss from {username}. Updating leaderboard...')
 
+@client.tree.command(name="updatescore", description="Updates wins and losses for player", guild=discord.Object(id=GUILD_ID))
+async def update_score(interaction: discord.Interaction, username: str, wins: int, losses: int):
+    leaderboard.change_wins(username, wins)
+    leaderboard.change_losses(username, losses)
+    await update_leaderboard_message()
+    await interaction.response.send_message(f'{username}\'s score has been changed. Updating leaderboard...')
+
 @client.tree.command(name="removeplayer", description="Removes a player from the leaderboard", guild=discord.Object(id=GUILD_ID))
 async def remove_player(interaction: discord.Interaction, username: str):
     leaderboard.remove_player(username)
@@ -135,6 +157,23 @@ async def rank_by_winrate(interaction: discord.Interaction):
     sort_type = 1
     await update_leaderboard_message()
     await interaction.response.send_message('Sorting leaderboard by Win percentage...')
+
+@client.tree.command(name="cleanup", description="Deletes all bot responses except the leaderboard message", guild=discord.Object(id=GUILD_ID))
+async def cleanup(interaction: discord.Interaction):
+    channel = interaction.channel
+    if not isinstance(channel, discord.TextChannel):
+        await interaction.response.send_message("This command can only be used in text channels.", ephemeral=True)
+        return
+
+    await interaction.response.defer(ephemeral=True)  # Defer the response to give the bot time to process
+
+    try:
+        async for message in channel.history(limit=100):  # Adjust limit as needed
+            if message.author == client.user and message.id != STATS_MSG_ID:
+                await message.delete()
+        await interaction.followup.send("Cleanup complete!", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"An error occurred: {e}", ephemeral=True)
 
 @client.tree.command(name="addtestdata", description="Adds test data for testing purposes", guild=discord.Object(id=GUILD_ID))
 async def add_test_data(interaction: discord.Interaction):
